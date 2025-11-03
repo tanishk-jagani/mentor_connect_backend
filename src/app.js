@@ -37,11 +37,21 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: "*", // Allow all origins
+    // FIX: Dynamic Origin Reflection.
+    // This function allows all origins while satisfying the browser security rule
+    // that requires the Access-Control-Allow-Origin header to match the request's Origin
+    // when credentials: true is set.
+    origin: (origin, callback) => {
+      // Allow any origin to access, and the cors library will reflect
+      // the requesting origin back in the 'Access-Control-Allow-Origin' header.
+      callback(null, true);
+    },
     credentials: true,
+    // Add allowed methods and headers for completeness, as preflights check these.
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
 app.use(express.json());
 app.use(cookieParser());
 
