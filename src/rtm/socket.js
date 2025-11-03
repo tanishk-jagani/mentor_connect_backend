@@ -1,11 +1,12 @@
 // /server/src/rtm/socket.js
 import { Server } from "socket.io";
 import Message from "../models/Message.js";
+import { CLIENT_URL } from "../utils/index.js";
 
 export function initSocket(httpServer, sessionMiddleware) {
   const io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
+      origin: CLIENT_URL || "http://localhost:5173",
       credentials: true,
     },
   });

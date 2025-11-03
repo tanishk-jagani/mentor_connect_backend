@@ -4,6 +4,7 @@ import passport from "passport";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import Profile from "../models/Profile.js";
+import { CLIENT_URL } from "../utils/index.js";
 
 const router = express.Router();
 
@@ -41,16 +42,17 @@ router.get("/google", (req, res, next) => {
   })(req, res, next);
 });
 // ✅ Google callback
+
 router.get(
   "/google/callback",
   passport.authenticate("google", {
-    failureRedirect: `${process.env.CLIENT_URL}/login`,
+    failureRedirect: `${CLIENT_URL}/login`,
     session: true,
   }),
   async (req, res) => {
     try {
       const user = req.user;
-      if (!user) return res.redirect(`${process.env.CLIENT_URL}/login`);
+      if (!user) return res.redirect(`${CLIENT_URL}/login`);
 
       // Try to upgrade role from state if unset
       if ((user.role === "unset" || user.role === "user") && req.query.state) {
@@ -66,19 +68,18 @@ router.get(
       }
 
       const needsOnboarding = await computeNeedsOnboarding(user);
-      if (needsOnboarding)
-        return res.redirect(`${process.env.CLIENT_URL}/onboarding`);
+      if (needsOnboarding) return res.redirect(`${CLIENT_URL}/onboarding`);
 
       return res.redirect(
         user.role === "mentor"
-          ? `${process.env.CLIENT_URL}/dashboard/mentor`
+          ? `${CLIENT_URL}/dashboard/mentor`
           : user.role === "mentee"
-          ? `${process.env.CLIENT_URL}/dashboard/mentee`
-          : `${process.env.CLIENT_URL}/dashboard`
+          ? `${CLIENT_URL}/dashboard/mentee`
+          : `${CLIENT_URL}/dashboard`
       );
     } catch (err) {
       console.error("❌ Google callback error:", err);
-      return res.redirect(`${process.env.CLIENT_URL}/login`);
+      return res.redirect(`${CLIENT_URL}/login`);
     }
   }
 );
