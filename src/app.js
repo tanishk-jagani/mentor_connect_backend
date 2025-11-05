@@ -38,7 +38,6 @@ const app = express();
 // ======================================
 // ⬇️ 1. Initialize Passport and connect it to the session
 app.use(helmet());
-import cors from "cors";
 
 app.use(
   cors({
