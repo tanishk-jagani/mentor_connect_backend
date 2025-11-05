@@ -36,6 +36,7 @@ const app = express();
 // ======================================
 // 🧩 MIDDLEWARE
 // ======================================
+// ⬇️ 1. Initialize Passport and connect it to the session
 app.use(helmet());
 app.use(
   cors({
@@ -79,6 +80,23 @@ const sessionMiddleware = session({
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
+
+// ⬇️ 2. This is the missing piece
+// Tells Passport WHAT to save in the session (just the user ID)
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+// ⬇️ 3. You will need this for all future requests
+// Tells Passport HOW to get the full user object from the session ID
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findByPk(id); // Or User.findById(id)
+    done(null, user); // Attaches the full user object to req.user
+  } catch (err) {
+    done(err);
+  }
+});
 
 // ======================================
 // 🛠 ROUTES
