@@ -56,6 +56,9 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+// On your Node.js backend
+
+const isProduction = process.env.NODE_ENV === "production";
 
 // ✅ define session middleware ONCE so sockets can share it
 const sessionMiddleware = session({
@@ -64,15 +67,16 @@ const sessionMiddleware = session({
   saveUninitialized: false,
   rolling: true,
   cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    sameSite: "lax",
-    secure: false,
-    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    httpOnly: true, // Prevents client-side JS from reading the cookie
+
+    // ⬇️ These are the critical changes ⬇️
+    secure: isProduction, // Set to true in production (Render)
+    sameSite: isProduction ? "none" : "lax", // 'none' for cross-origin, 'lax' for local
   },
 });
-// ✅ Fix: Add secure + sameSite cookie config for Google session
-app.use(sessionMiddleware);
 
+app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
 
