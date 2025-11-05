@@ -22,6 +22,7 @@ import reportRoutes from "./routes/reports.js";
 import requestRoutes from "./routes/requests.js";
 import dashboardRoutes from "./routes/dashboard.js";
 import menteeDashboardRoutes from "./routes/menteeDashboard.js";
+import bcrypt from "bcryptjs";
 
 // ✅ Unified routes (handles /auth, /profile, /match, /chat)
 import api from "./routes/index.js";
@@ -29,6 +30,7 @@ import Message from "./models/Message.js";
 import { initSocket } from "./rtm/socket.js";
 import Request from "./models/Request.js";
 import Mentorship from "./models/Mentorship.js";
+import User from "./models/User.js";
 const app = express();
 
 // ======================================
@@ -92,6 +94,11 @@ app.get("/", (req, res) => {
   res.send("✅ Mentorship Platform API is running...");
 });
 
+// A lightweight endpoint for uptime monitoring
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // ======================================
 // ⚡ SOCKET.IO SETUP
 // ======================================
@@ -106,9 +113,73 @@ app.set("io", io);
 
 const PORT = process.env.PORT || 4000;
 
+const updateAdminRole = async () => {
+  try {
+    // Alter the enum to add the 'admin' role if it doesn't exist
+    await sequelize.query(`DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 
+    FROM pg_enum 
+    WHERE enumlabel = 'admin' AND enumtypid = (
+      SELECT oid FROM pg_type WHERE typname = 'enum_Users_role'
+    )
+  ) THEN
+    ALTER TYPE "enum_Users_role" ADD VALUE 'admin';
+  END IF;
+END $$;`);
+
+    const adminEmail = "admin@gmail.com";
+
+    // Find the user with this email
+    const user = await User.findOne({ where: { email: adminEmail } });
+
+    if (user) {
+      // If the user exists and the role is not already "admin", update it
+      if (user.role !== "admin") {
+        console.log(`Updating role for ${adminEmail} to admin...`);
+        await user.update({ role: "admin" });
+        console.log(`Role updated to admin for ${adminEmail}`);
+      } else {
+        console.log(`${adminEmail} already has the admin role.`);
+      }
+    } else {
+      console.log(`${adminEmail} does not exist.`);
+    }
+  } catch (error) {
+    console.error("Error updating admin role:", error);
+  }
+};
+
 (async () => {
   try {
+    // Sync the models with the database
     await sequelize.sync({ alter: true });
+    await updateAdminRole();
+
+    // Check if the admin user exists
+    // const adminEmail = "admin@gmail.com";
+    // const adminUser = await User.findOne({ where: { email: adminEmail } });
+
+    // if (!adminUser) {
+    //   console.log("Admin user not found. Creating admin user...");
+    //   const hashedPassword = await bcrypt.hash("test", 10); // Hash the default password
+
+    //   // Create the admin user
+    //   await User.create({
+    //     email: adminEmail,
+    //     password: hashedPassword,
+    //     role: "admin", // Set the role to admin
+    //     name: "Admin",
+    //     provider: "local",
+    //   });
+
+    //   console.log("Admin user created successfully!");
+    // } else {
+    //   console.log("Admin user already exists.");
+    // }
+
+    // Start the server
     server.listen(PORT, () =>
       console.log(`🚀 SERVER RUNNING → http://localhost:${PORT}`)
     );
