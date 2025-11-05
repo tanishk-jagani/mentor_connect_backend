@@ -155,19 +155,45 @@ router.post("/login", async (req, res) => {
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) return res.status(400).json({ message: "Invalid credentials" });
 
-    req.login(user, async (err) => {
+    // ⬇️ START MODIFICATION ⬇️
+
+    // req.login is callback-based. Remove 'async' from this callback.
+    req.login(user, (err) => {
       if (err) {
         console.error("❌ req.login error:", err);
         return res.status(500).json({ message: "Login failed" });
       }
-      const needsOnboarding = await computeNeedsOnboarding(user);
-      const redirect = needsOnboarding
-        ? "/onboarding"
-        : user.role === "mentor"
-        ? "/dashboard/mentor"
-        : "/dashboard/mentee";
-      return res.json({ user: toSafeUser(user), needsOnboarding, redirect });
+
+      // Now, do your async work *inside* the callback
+      computeNeedsOnboarding(user)
+        .then((needsOnboarding) => {
+          const redirect = needsOnboarding
+            ? "/onboarding"
+            : user.role === "mentor"
+            ? "/dashboard/mentor"
+            : "/dashboard/mentee";
+
+          // 💡 THE FIX: Manually save the session before responding
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              console.error("❌ Session save error:", saveErr);
+              return res.status(500).json({ message: "Session save failed" });
+            }
+
+            // Now the session is saved and the cookie is ready to be sent.
+            return res.json({
+              user: toSafeUser(user),
+              needsOnboarding,
+              redirect,
+            });
+          });
+        })
+        .catch((computeErr) => {
+          console.error("❌ computeNeedsOnboarding error:", computeErr);
+          return res.status(500).json({ message: "Internal server error" });
+        });
     });
+    // ⬆️ END MODIFICATION ⬆️
   } catch (err) {
     console.error("❌ Login error:", err);
     return res.status(500).json({ message: "Internal server error" });
