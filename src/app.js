@@ -38,45 +38,40 @@ const app = express();
 // ======================================
 // ⬇️ 1. Initialize Passport and connect it to the session
 app.use(helmet());
+import cors from "cors";
+
 app.use(
   cors({
-    // FIX: Dynamic Origin Reflection.
-    // This function allows all origins while satisfying the browser security rule
-    // that requires the Access-Control-Allow-Origin header to match the request's Origin
-    // when credentials: true is set.
     origin: (origin, callback) => {
-      // Allow any origin to access, and the cors library will reflect
-      // the requesting origin back in the 'Access-Control-Allow-Origin' header.
+      // Reflect the request origin so credentials work
       callback(null, true);
     },
-    credentials: true,
-    // Add allowed methods and headers for completeness, as preflights check these.
+    credentials: true, // allow cookies/sessions
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 app.use(express.json());
 app.use(cookieParser());
-// On your Node.js backend
+// ⬅️ add this BEFORE session middleware
+app.set("trust proxy", 1);
 
+// On your Node.js backend
 const isProduction = process.env.NODE_ENV === "production";
 
-// ✅ define session middleware ONCE so sockets can share it
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET || "defaultsecret",
   resave: false,
   saveUninitialized: false,
   rolling: true,
   cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    httpOnly: true, // Prevents client-side JS from reading the cookie
-
-    // ⬇️ These are the critical changes ⬇️
-    secure: isProduction, // Set to true in production (Render)
-    sameSite: isProduction ? "none" : "lax", // 'none' for cross-origin, 'lax' for local
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    secure: isProduction, // HTTPS only in prod
+    sameSite: isProduction ? "none" : "lax", // cross-site requires 'none'
   },
 });
-
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
