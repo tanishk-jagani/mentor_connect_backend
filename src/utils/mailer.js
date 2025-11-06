@@ -37,7 +37,7 @@ export async function sendMail({ to, subject, text, html }) {
 
   const info = await transporter.sendMail({
     from: `"${MAIL_FROM_NAME}" <${fromAddress}>`,
-    to: "akshay.tanikatech@gmail.com",
+    to: to,
     subject,
     text: text || undefined,
     html: html || undefined,
