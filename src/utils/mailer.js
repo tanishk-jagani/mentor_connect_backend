@@ -14,10 +14,11 @@ const fromAddress = MAIL_FROM_EMAIL || SMTP_USER;
 let transporter;
 // Gmail quick setup (best for quick finish)
 transporter = nodemailer.createTransport({
-  service: "gmail",
+  // service: "gmail",
   auth: { user: SMTP_USER, pass: SMTP_PASS },
-  secure: false, // Use `false` for port 587, `true` for port 465
-  port: 587,
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   tls: {
     rejectUnauthorized: false,
   },
