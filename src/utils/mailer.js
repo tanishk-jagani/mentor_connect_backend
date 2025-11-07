@@ -30,6 +30,7 @@ transporter.verify().then(
 export async function sendMail({ to, subject, text, html }) {
   if (!transporter) throw new Error("Mailer not initialized");
 
+  console.log("Attempting to send email...");
   console.log({
     SMTP_USER,
     SMTP_PASS,
@@ -37,12 +38,21 @@ export async function sendMail({ to, subject, text, html }) {
     MAIL_FROM_EMAIL,
   });
 
-  const info = await transporter.sendMail({
-    from: `"${MAIL_FROM_NAME}" <${fromAddress}>`,
-    to: to,
-    subject,
-    text: text || undefined,
-    html: html || undefined,
-  });
-  return info;
+  try {
+    const info = await transporter.sendMail({
+      from: `"${MAIL_FROM_NAME}" <${fromAddress}>`,
+      to: to,
+      subject,
+      text: text || undefined,
+      html: html || undefined,
+    });
+
+    console.log(`📬 Email sent successfully to: ${to}`);
+    console.log("Message Info:", info);
+
+    return info;
+  } catch (err) {
+    console.error("⚠️ Error sending email:", err.message);
+    throw new Error(`Failed to send email: ${err.message}`);
+  }
 }
