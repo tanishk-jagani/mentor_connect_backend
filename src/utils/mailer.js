@@ -16,6 +16,8 @@ let transporter;
 transporter = nodemailer.createTransport({
   service: "gmail",
   auth: { user: SMTP_USER, pass: SMTP_PASS },
+  secure: false, // Use `false` for port 587, `true` for port 465
+  port: 587,
 });
 
 // Optional: verify once on boot (doesn’t crash if fails)

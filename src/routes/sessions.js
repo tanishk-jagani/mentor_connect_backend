@@ -95,24 +95,32 @@ router.post("/book", requireAuth, async (req, res) => {
 
 /** Mentor: accept */
 router.patch("/:id/accept", requireAuth, async (req, res) => {
-  const session = await Session.findByPk(req.params.id);
-  if (!session || session.mentor_id !== req.user.id)
-    return res.status(404).json({ message: "Session not found" });
+  try {
+    const session = await Session.findByPk(req.params.id);
+    if (!session || session.mentor_id !== req.user.id)
+      return res.status(404).json({ message: "Session not found" });
 
-  session.status = "accepted";
-  await session.save();
+    session.status = "accepted";
+    await session.save();
 
-  const mentee = await User.findByPk(session.mentee_id, { raw: true });
-  await sendMail({
-    to: mentee.email,
-    subject: "Your mentoring session was accepted",
-    html: `
-      <p>Your session has been accepted 🎉</p>
-      <p>Time: ${new Date(session.start_time).toLocaleString()}</p>
-    `,
-  });
+    const mentee = await User.findByPk(session.mentee_id, { raw: true });
 
-  res.json(session);
+    res.json(session);
+    try {
+      await sendMail({
+        to: mentee.email,
+        subject: "Your mentoring session was accepted",
+        html: `
+          <p>Your session has been accepted 🎉</p>
+          <p>Time: ${new Date(session.start_time).toLocaleString()}</p>
+        `,
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+    }
+  } catch (error) {
+    console.error("Error in accept route:", error);
+  }
 });
 
 /** Mentor: decline (also frees the slot) */
