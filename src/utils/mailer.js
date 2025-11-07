@@ -2,44 +2,53 @@
 import nodemailer from "nodemailer";
 
 const {
+  SMTP_HOST,
+  SMTP_PORT,
   SMTP_USER,
   SMTP_PASS,
   MAIL_FROM_NAME = "MentorConnect",
   MAIL_FROM_EMAIL,
-  NODE_ENV,
 } = process.env;
 
 const fromAddress = MAIL_FROM_EMAIL || SMTP_USER;
 
 let transporter;
-// Gmail quick setup (best for quick finish)
-transporter = nodemailer.createTransport({
-  // service: "gmail",
-  auth: { user: SMTP_USER, pass: SMTP_PASS },
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 30000, // Increase the connection timeout (in ms)
-  socketTimeout: 30000, // Increase the socket timeout (in ms)
-});
 
-// Optional: verify once on boot (doesn’t crash if fails)
-transporter.verify().then(
-  () => console.log("📧 Mailer ready"),
-  (err) =>
-    console.warn("⚠️ Mailer not verified (will try on send):", err?.message)
-);
+if (SMTP_HOST && SMTP_PORT && SMTP_USER && SMTP_PASS) {
+  // Use the professional SMTP transport
+  transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: parseInt(SMTP_PORT, 10), // Ensure port is an integer
+    secure: SMTP_PORT == "465", // true for 465, false for other ports (like 587)
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
+    },
+  });
+
+  // Optional: verify once on boot
+  transporter.verify().then(
+    () => console.log("📧 Mailer ready (SendGrid)"),
+    (err) =>
+      console.warn("⚠️ Mailer not verified (will try on send):", err?.message)
+  );
+} else {
+  console.warn("⚠️ Mailer config missing, emails will not be sent.");
+  console.warn("Missing: SMTP_HOST, SMTP_PORT, SMTP_USER, or SMTP_PASS");
+}
 
 export async function sendMail({ to, subject, text, html }) {
-  if (!transporter) throw new Error("Mailer not initialized");
+  if (!transporter) {
+    console.error("⚠️ Error: Mailer not initialized.");
+    throw new Error("Mailer not initialized");
+  }
 
   console.log("Attempting to send email...");
   console.log({
     SMTP_USER,
-    SMTP_PASS,
     MAIL_FROM_NAME,
     MAIL_FROM_EMAIL,
   });
