@@ -46,7 +46,7 @@ app.use(
       callback(null, true);
     },
     credentials: true, // allow cookies/sessions
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
