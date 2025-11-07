@@ -18,6 +18,11 @@ transporter = nodemailer.createTransport({
   auth: { user: SMTP_USER, pass: SMTP_PASS },
   secure: false, // Use `false` for port 587, `true` for port 465
   port: 587,
+  tls: {
+    rejectUnauthorized: false,
+  },
+  connectionTimeout: 30000,  // Increase the connection timeout (in ms)
+  socketTimeout: 30000,  // Increase the socket timeout (in ms)
 });
 
 // Optional: verify once on boot (doesn’t crash if fails)
@@ -36,7 +41,8 @@ export async function sendMail({ to, subject, text, html }) {
     SMTP_PASS,
     MAIL_FROM_NAME,
     MAIL_FROM_EMAIL,
-  });
+  });vjes kzqp tigk xfhb
+
 
   try {
     const info = await transporter.sendMail({
